@@ -174,6 +174,7 @@ function getHashPage () {
     
 }
 
+// função que recebe o ALIAS de uma ROTA e trata, lançando o usuário para a rota caso exista ou para o default caso não
 function goPage(alias) {
     // escrevendo o hash
     var route = getRoute(alias);
@@ -201,7 +202,7 @@ setRouteDefault('home');
 // getando a primeira vez que o usuário abre o site
 getHashPage();
 
-// escutando o evento de alteração no hash
+// escutando o evento de alteração no hash (o HASH é o final do link do navegador, que é a nossa rota, quando ela for alterada manualmente getamos aqui nesse eventos)
 if ("onhashchange" in window) {
     window.addEventListener("hashchange", function (e) {
         getHashPage();

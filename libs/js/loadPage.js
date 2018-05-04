@@ -26,6 +26,22 @@ let routes = [
     }
 ];
 
+function addRoute (alias, html, style, ctrl) {
+
+    if ( alias === undefined && html === undefined) {
+        console.error("[LoadPage:AddRoute]: É necessário informar Alias e HTML para criar uma Rota");
+        return false;
+    }
+
+    var myRoute  = {alias:'', html:'', style: '', controller:''};
+    if (alias != undefined) myRoute.alias = alias;
+    if (alias != undefined) myRoute.html = html;
+    if (alias != undefined) myRoute.controller = ctrl;
+    if (alias != undefined) myRoute.style = style;
+
+    routes.push(myRoute);
+}
+
 function loadFile (page) {
     return new Promise (resolve => {
         var xhr = new XMLHttpRequest();
@@ -62,14 +78,15 @@ function loadFile (page) {
 }
 
 // função para carregamento de páginas HTML em uma div
-function loadPage (page) {
+function loadPage (page, hash) {
     return new Promise (resolve => {
         // getando nosso elemento main criado no body do index
         var main = document.querySelector('main');
         
         loadFile(page).then(response => {
             if (response.success) {
-                main.innerHTML = response.data;
+                main.innerHTML = response.data; // seta o conteúdo da main
+                document.location.hash = `/${hash}`; //atualiza o hash da página
                 resolve(true);
             }else{
                 resolve(false);
@@ -163,14 +180,14 @@ function goPage(alias) {
     // carregamos o style caso exista
     if (route.style != undefined) {  // adiciona um css caso exista
         loadStyle(route.style).then(response => {
-            loadPage(route.html).then(response => {
+            loadPage(route.html, route.alias).then(response => {
                 // controller caso exista
                  if (route.controller != undefined) {loadController(route.controller).then(response => {})};
             });
         });
     // caso não, passamos para o html
     }else{
-        loadPage(route.html).then(response => {
+        loadPage(route.html, route.alias).then(response => {
             // controller caso exista
             if (route.controller != undefined) {loadController(route.controller).then(response => {})};
         });

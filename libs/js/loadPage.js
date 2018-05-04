@@ -26,53 +26,111 @@ let routes = [
     }
 ];
 
+function loadFile (page) {
+    return new Promise (resolve => {
+        var xhr = new XMLHttpRequest();
+
+        var response = {
+            "succcess" : false,
+            "data" : null
+        };
+
+        // xhr.onload = function () {
+            // if (this.status === 200) {
+            //     main.innerHTML = this.response;
+            //     resolve(true);
+            // }else{
+
+            //     reject(false);
+            // }
+        // };
+
+        xhr.onloadend = function() {
+             if (this.status === 200) {
+                response.success = true;
+                response.data = this.response;
+                resolve(response);
+            }else{
+                alert(`"${page}" Não foi encontrado, verifique se o arquivo existe!`);
+                resolve(response);
+            }
+        }
+
+        xhr.open('GET', page, true);
+        xhr.send();
+    });
+}
+
 // função para carregamento de páginas HTML em uma div
-function load (page) {
-    // getando nosso elemento main criado no body do index
-    var main = document.querySelector('main');
-    
-    var xhr = new XMLHttpRequest();
-
-    xhr.onload = function () {
-        main.innerHTML = this.response;
-    };
-
-    xhr.open('GET', page, true);
-    xhr.send();
+function loadPage (page) {
+    return new Promise (resolve => {
+        // getando nosso elemento main criado no body do index
+        var main = document.querySelector('main');
+        
+        loadFile(page).then(response => {
+            if (response.success) {
+                main.innerHTML = response.data;
+                resolve(true);
+            }else{
+                resolve(false);
+            }
+        })
+    });
 }
 
 function loadController (ctrl) {
-    url = `./app/controllers/${ctrl}.js`;
-    var scripts = document.scripts;
-    for (var i in scripts) {
-        if (scripts[i].src != undefined && scripts[i].src.indexOf(ctrl)>=0) {
-            // se o script já estiver em cache removemos
-            document.scripts[i].remove();
-        }
-    }
-    script = document.createElement('script');
-    script.src = url;
-    document.body.appendChild(script);
+    return new Promise (resolve => {
+        url = `./app/controllers/${ctrl}.js`;
+
+        loadFile(url).then(response => {
+            if (response.success) {
+                var scripts = document.scripts;
+                for (var i in scripts) {
+                    if (scripts[i].src != undefined && scripts[i].src.indexOf(ctrl)>=0) {
+                        // se o script já estiver em cache removemos
+                        document.scripts[i].remove();
+                    }
+                }
+                script = document.createElement('script');
+                script.src = url;
+                document.body.appendChild(script);
+                resolve(true);
+            }else{
+                resolve(false);
+            }
+        })
+    });
+
 }
 
 function loadStyle(style) {
-    var links = document.querySelectorAll('link');
-    var count = 0;
-    for (var i in links) {
-        // console.log(links[i].href);
-        // console.log(style);
-        if (links[i].href != undefined && links[i].href.indexOf(style) >= 0) {
-            count++;
-        }
-    }
-    // caso script ainda não tenha sido adicionado
-    if (count === 0) {
+    return new Promise (resolve => {
         url = `./app/css/${style}.css`;
-        let link = document.createElement('link');
-        link.rel = `stylesheet`;
-        link.href = url;
-        document.head.appendChild(link);
-    }
+
+        loadFile(url).then(response => {
+            if (response.success) {
+                var links = document.querySelectorAll('link');
+                var count = 0;
+                for (var i in links) {
+                    // console.log(links[i].href);
+                    // console.log(style);
+                    if (links[i].href != undefined && links[i].href.indexOf(style) >= 0) {
+                        count++;
+                    }
+                }
+                // caso script ainda não tenha sido adicionado
+                if (count === 0) {
+                    let link = document.createElement('link');
+                    link.rel = `stylesheet`;
+                    link.href = url;
+                    document.head.appendChild(link);
+                }
+                resolve(true);
+            }else{
+                resolve(false);
+            }
+        })
+    });
 }
 
 // seta a rota padrão
@@ -95,20 +153,29 @@ function getHashPage () {
     let p = hash.indexOf('#/'); // verificando se o padrão hash está correto
    
     // escrevendo o hash
-    var route = getRoute(hash.substr(p+2));
-    load(route.html); // carregando a rota
-    document.location.hash = `/${route.alias}`; // atualizamos o hash
-    if (route.controller != undefined) loadController(route.controller); // adiciona um controller caso exista
-    if (route.style != undefined) loadStyle(route.style); // adiciona um css caso exista
+    goPage(hash.substr(p+2));
+    
 }
 
 function goPage(alias) {
     // escrevendo o hash
     var route = getRoute(alias);
-    load(route.html); // carregando a rota
-    document.location.hash = `/${route.alias}`; // atualizamos o hash
-    if (route.controller != undefined) loadController(route.controller); // adiciona um controller caso exista
-    if (route.style != undefined) loadStyle(route.style); // adiciona um css caso exista
+    // carregamos o style caso exista
+    if (route.style != undefined) {  // adiciona um css caso exista
+        loadStyle(route.style).then(response => {
+            loadPage(route.html).then(response => {
+                // controller caso exista
+                 if (route.controller != undefined) {loadController(route.controller).then(response => {})};
+            });
+        });
+    // caso não, passamos para o html
+    }else{
+        loadPage(route.html).then(response => {
+            // controller caso exista
+            if (route.controller != undefined) {loadController(route.controller).then(response => {})};
+        });
+    }
+    
 }
 
 

@@ -196,7 +196,9 @@ function goPage(alias) {
 }
 
 
-setRouteDefault('404');
+// setando a rota padrão, qualquer tentativa de acesso a uma roa inexistente, é imediatamente devovle para a rota padrão
+setRouteDefault('home');
+// getando a primeira vez que o usuário abre o site
 getHashPage();
 
 // escutando o evento de alteração no hash
